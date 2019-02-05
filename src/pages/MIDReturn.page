@@ -1,0 +1,367 @@
+<!--
+/**
+* @description  MIDReturn Page for Custom VoD functionality
+* @author       NIIT
+* @date         08 Jan 2019
+* @LastModified 31 Jan 2018
+* @Change Log   MID Return Modifications. 
+*/
+-->
+
+<apex:page doctype="html-5.0" showheader="false" sidebar="false" showchat="false" standardStylesheets="false" 
+        title="Ofcom Licensing services"
+        id="MIDReturn" controller="MIDReturnController" action="{!onPageLoad}">
+  <!-- Bootstrap Date-Picker Plugin -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+    <apex:includescript value="{!URLFOR($Resource.MID_Returns,'MID_Returns/VodReturns.js')}" />
+    <apex:stylesheet value="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css"/>
+
+    <script language="javascript" type="text/javascript">
+        jQuery( document ).ready(function( $ ) {
+            // disable all input fields for read only mode
+            if({!readOnly || (wSchedule.status != 'Not started' && wSchedule.status != 'In progress')})
+            {
+                $('.list input[type="text"]').prop("disabled", true);
+            }
+            $('.numeric').on('input', function (event) { 
+                this.value = this.value.replace(/[^0-9]/g, '');
+                $('.numeric').attr('maxLength','16');
+            }); 
+        });
+         
+          
+    </script>
+    <style>
+        <!-- amend standard salesforce style -->
+        .errorMsg {
+            color: red;
+        }
+        <!-- stop popover text colour inheriting from button -->
+        .popover {
+            color: black;
+        }
+    </style>
+    <style>
+        <!-- Required '*' -->
+        tr.required .row-label:after {
+            content: "*";
+            color: #c00;
+            font-weight: bold;
+        }
+        <!-- Table styles -->
+        td.label-cell {
+            white-space: nowrap;
+        }
+        td span.field-cell {
+            width: 400px;
+            height: 43px;
+        }
+        .col-md-6.labels td span.field-cell, 
+        .col-md-5.labels td span.field-cell, 
+        .col-md-4.labels td span.field-cell, 
+        .col-md-3 td span.field-cell, 
+        .col-md-2 td span.field-cell, 
+        .col-md-1 td span.field-cell {
+            width: 80px;
+        }
+        <!-- column headings -->    
+        th {
+           text-align: center !important;
+        }
+        .col-md-6.labels th.column-heading, 
+        .col-md-5.labels th.column-heading, 
+        .col-md-4.labels th.column-heading, 
+        .col-md-3 th.column-heading, 
+        .col-md-2 th.column-heading, 
+        .col-md-1 th.column-heading {
+            width: 110px;
+            min-width: 80px;    
+        }
+        <!-- set numerical input boxes width -->    
+        td input {
+            width: 110px;
+            text-align: right;
+            padding: 0 3px;
+        }
+        .col-md-6.labels td input, 
+        .col-md-5.labels td input, 
+        .col-md-4.labels td input, 
+        .col-md-3 td input, 
+        .col-md-2 td input, 
+        .col-md-1 td input {
+            width: 80px;
+        }
+        <!-- set labels padding --> 
+        td.label-cell span, 
+        td span.row-label {
+            line-height: 24px;
+            padding: 0 2px;
+        }
+        <!-- set calculated fields padding -->  
+        td span {
+            line-height: 24px;
+            padding: 0 6px;
+        }
+        <!-- set text (non-numeric) input boxes width -->   
+        td input[maxLength], 
+        .labels td input[maxLength] {
+            width: 200px;
+            text-align: left;
+            padding: 1px 5px;
+        }
+        <!-- set text area input boxes width -->    
+        td textarea, 
+        .labels td textarea {
+            min-width: 600px;
+            min-height: 200px;
+            text-align: left;
+            padding: 8px;
+        }
+        <!-- set date boxes padding --> 
+        td span.dateInput, 
+        .labels td span.dateInput {
+            padding: 0;
+        }
+        <!-- set date input boxes width --> 
+        td span.dateInput input[type="text"], 
+        .labels td span.dateInput input[type="text"] {
+            width: 110px;
+            text-align: right;
+        }
+        <!-- supress salesforce date selector -->   
+        .dateFormat {
+            display: none;
+        }
+    </style>
+    <apex:composition template="LicensingComTemplate">
+
+        <!-- Tags -->
+        <apex:define name="MetaTags">
+            <apex:variable var="metaTitle" value="page title" />
+            <apex:variable var="metaDescription" value="description" />
+        </apex:define>
+
+        <!-- PageVariables - SSL/non-SSL, Licensing/MID, etc -->
+        <apex:define name="PageVariables">
+            <apex:variable var="pageType" value="internal" />
+            <apex:variable var="siteType" value="mid" />
+        </apex:define>
+
+        <!-- BreadCrumb -->
+        <apex:define name="BreadCrumb">
+        </apex:define>
+
+        <!-- Errors -->
+        <apex:define name="Error">
+            <!-- Page Messages -->
+            <apex:outputPanel id="error">
+                <apex:messages styleClass="error alert alert-danger list-unstyled" globalOnly="true"/>
+            </apex:outputPanel>
+        </apex:define>
+
+        <!-- Heading -->
+        <apex:define name="Heading">
+            <h2>Video On Demand</h2>
+            
+        </apex:define>
+        <!-- Content -->
+        <apex:define name="Heading">
+            {!returnType}
+            <h2>{!orgAccountName}{!returnLicence}{!returnChannel}{!returnPeriod}</h2>
+            <c:MIDComScheduleStatus id="scheduleStatus" rendered="{!wSchedule.withinValidSubmissionPeriod || readOnly}" status="{!wSchedule.status}"/>
+        </apex:define>
+         
+         <!-- Content -->
+        <apex:define name="Content">   
+                  
+            <apex:outputPanel rendered="{!wSchedule.withinValidSubmissionPeriod || readOnly}" layout="none">
+                <div class="row">
+                    <div class="col-md-12">
+                        <!-- Buttons -->
+                        <div class="col-sm-12 form-group">
+                            <div class="col-md-8">
+                                You are on page {!pageIndex+1} of 2
+                            </div>
+    
+                            <!-- Status change buttons -->
+                            <apex:outputPanel rendered="{!!readOnly}" styleClass="col-md-4 pull-right">
+                               <apex:commandButton id="edit" styleClass="btn btn-default" 
+                                    rendered="{!wSchedule.hasModifyPermission && wSchedule.status = 'Ready to submit'}" 
+                                    action="{!edit}" value="Re-open"/>
+                               <apex:commandButton id="readyToSubmit" styleClass="btn btn-default" 
+                                    rendered="{!wSchedule.status = 'In progress'}"
+                                    action="{!readyToSubmit}" value="Ready to submit" />
+                               <apex:commandButton id="submit" styleClass="btn btn-default" 
+                                    rendered="{!wSchedule.status = 'Ready to submit' && wSchedule.hasSubmitPermission}"
+                                    action="{!submit}" value="Submit return" />
+                            </apex:outputPanel>
+                        </div>
+                    </div>
+                </div>
+    
+                <ol class="breadcrumb">
+                    <apex:repeat value="{!list_Tabs}" var="tab">
+                        <li>
+                            <apex:outputPanel layout="none" rendered="{!strTabVisible==tab}">{!strTabVisible}</apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!strTabVisible<>tab}">
+                                <apex:commandLink id="selectPage" action="{!selectPage}" >
+                                        <apex:param name="index" value="{!pageIndex}" assignTo="{!selectPageNumber}"/>
+                                        <apex:param name="tabName" value="{!tab}" assignTo="{!strTabVisible}"/> 
+                                        <span aria-label="{!tab}" aria-hidden="true">{!tab}</span>
+                                </apex:commandLink>
+                            </apex:outputPanel>
+                        </li>
+                    </apex:repeat>
+                </ol>
+            </apex:outputPanel>
+            <div class="row">
+                <apex:outputPanel id="expired" rendered="{!!wSchedule.withinValidSubmissionPeriod && !readOnly}" layout="block" styleClass="col-md-6 col-sm-7">
+
+                    <div class="alert alert-info">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <apex:outputText escape="false" value="{!$Label.MIDComExpiredReturnMsg}"/>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Buttons -->
+                    <div>
+                        <div class="form-group">
+                            <apex:commandButton id="ok" styleClass="btn btn-primary pull-right" action="{!cancel}" 
+                                    value="{!$Label.LicensingComButtonOK}" />
+                        </div>
+                    </div>
+                </apex:outputPanel>
+            
+                <apex:outputPanel id="returnPages" rendered="{!wSchedule.withinValidSubmissionPeriod || readOnly}" layout="block" styleClass="col-md-12">
+                    <apex:variable var="readOnlyMode" value="{!readOnly || (wSchedule.status != 'Not started' && wSchedule.status != 'In progress')}"/>
+
+                    <!-- instruction messages -->
+                    <!--apex:outputPanel rendered="{!!readOnly}" layout="block" styleClass="row">
+                        <div class="col-sm-12">
+                            <span style="font-style: italic;">
+                                <!--apex:outputText escape="false" value="{!$Label.LicensingComRequiredFieldMsg}"/-->
+                                <!--apex:outputText escape="false" value="{!$Label.MIDComIgnoredDecimalsMsg}"/-->
+                            <!--/span>
+                            <div class="col-sm-12"><br/></div>
+                        </div>
+                    </apex:outputPanel-->
+                    <br/>
+                    
+                   <apex:actionFunction action="{!DeleteVoD}" name="DeleteVoDC" id="afUpload" reRender="PageBlockSection, error" oncomplete="ScrollonTop();"/>
+                   <apex:outputPanel id="opnlPlateforms" rendered="{!IF(strTabVisible == 'Platform', True, False)}" layout="block" styleClass="table-unresponsive">
+                      <h2>{!strTabVisible}</h2>
+                      <apex:pageBlock >
+                        <apex:pageblockSection collapsible="false" columns="2" id="PageBlockSection">
+                        <!-- Text Below VOD tabs -->
+                        <apex:outputPanel rendered="{!!readOnly}" layout="block" styleClass="row">
+                            <div class="col-sm-12"><br/></div>
+                            <div class="col-sm-12">
+                                <span style="font-style: italic;">
+                                    <apex:outputText escape="false" value="{!$Label.MIDVodText}" />
+                                </span>
+                            </div>
+                        </apex:outputPanel>    
+                        <br/>
+                           <apex:outputPanel id="table1" >                                
+                            <apex:pageBlockTable style="border-top: 1px solid #ddd;width:100px!important;text-align:center!important;" value="{!wrapPlatformList}" var="platWrap" id="table">
+                                   <apex:column style="border-top: 1px solid #ddd;width:300px!important;text-align:center!important;">                                                                        
+                                    <apex:facet name="header">                                        
+                                         <apex:outputPanel layout="none">
+                                            <apex:outputLabel style="position:relative; top:15px; right:5px" value="Select All"/><apex:inputCheckbox disabled="{!readOnlyMode}" styleClass="main-checkbox"  style="position:relative; left:44px;top:-12px" onclick="selectAllCheckboxes(this,'inputId')"/>
+                                        </apex:outputPanel>             
+                                    </apex:facet>
+                                    <apex:inputCheckbox disabled="{!readOnlyMode}" style="position:relative; left:45px" value="{!platWrap.selected}" id="inputId" styleClass="select-checkbox" onclick="toggleSelectAllCheckbox(this)"/>
+                                </apex:column>
+                                <apex:column headerValue="Platform Name" style="border-top: 1px solid #ddd;width:50px!important;text-align:center!important; position:relative; right:0px">                                  
+                                     <apex:inputText style="width:200px!important; text-align:left!important;" disabled="{!readOnlyMode}" value="{!platWrap.vod.Platform_Name__c}" onKeyUp="limitText(this,254);" onKeyDown="limitText(this,254);"></apex:inputText>
+                                </apex:column>
+                          </apex:pageBlockTable>  
+                          </apex:outputPanel>
+                            <br/><br/> 
+                            <apex:commandButton style="position:relative; left:55px" rendered="{!!readOnlyMode}" action="{!addVODRow}" value="Add more" reRender="PageBlockSection, error" styleClass="btn btn-success pull-left;width=30px" oncomplete="ScrollonTop();"/>
+                            <apex:commandButton style="width:150px!important; position:relative; right:800px" rendered="{!!readOnlyMode}" value="Delete" styleClass="btn btn-danger pull-left;width=200px!important" onclick="DeleteVoD(); return false;" status=""/><br/><br/>                              
+                          </apex:pageblockSection> 
+                                
+                    </apex:pageBlock>
+                   </apex:outputPanel>
+                                   
+                    <apex:outputPanel id="opnlVodReturns" rendered="{!IF(strTabVisible == 'VOD Returns', True, False)}" >
+                      <h2>{!strTabVisible}</h2>
+                      <apex:pageBlock >
+                        <apex:pageblockSection collapsible="false" columns="2" id="PageBlockSection" >
+                            <!-- Text Below VOD tabs -->
+                            <apex:outputPanel rendered="{!!readOnly}" layout="block" styleClass="row">
+                                <div class="col-sm-12"><br/></div>
+                                <div class="col-sm-12">
+                                    <span style="font-style: italic;">
+                                        <apex:outputText escape="false" value="{!$Label.MID_ReturnHelpText}" />
+                                    </span>
+                                </div>
+                            </apex:outputPanel>   
+                            <br/>
+                            <apex:outputPanel >
+                             <apex:pageBlockTable style="border-top: 1px solid #ddd" value="{!MIDReturnobjList}" var="vodReturn" id="table">
+                                <apex:column headerValue="ODPS Outlet">                                  
+                                     <apex:inputField styleClass="numeric" value="{!vodReturn.Plateform_Id__r.Platform_Name__c}" html-disabled="true"></apex:inputField>
+                                </apex:column>
+                                <apex:column headerValue="Total hours of programming" >                                  
+                                     <apex:inputField styleClass="numeric" style="width:110px!important;text-align:right!important" value="{!vodReturn.Total_Hours_Of_Programming__c}"></apex:inputField>
+                                </apex:column>
+                                <apex:column headerValue="Total number of programmes" >                                  
+                                     <apex:inputField styleClass="numeric" style="width:110px!important;text-align:right!important" value="{!vodReturn.Total_Number_Of_Programs__c}"></apex:inputField>
+                                </apex:column>
+                                <apex:column headerValue="Number of programme hours provided with subtitles" >                                  
+                                     <apex:inputField styleClass="numeric" style="width:110px!important;text-align:right!important" value="{!vodReturn.Program_Hours_Provided_With_Subtitles__c}"></apex:inputField>
+                                </apex:column>
+                                <apex:column headerValue="Number of individual programmes provided with subtitles" >                                  
+                                     <apex:inputField styleClass="numeric" style="width:110px!important;text-align:right!important" value="{!vodReturn.Individual_Programs_Provided_With_Subt__c}"></apex:inputField>
+                                </apex:column>
+                                <apex:column headerValue="Number of programme hours provided with signing" >                                  
+                                     <apex:inputField styleClass="numeric" style="width:110px!important;text-align:right!important" value="{!vodReturn.Program_Hours_Provided_With_Signing__c}"></apex:inputField>
+                                </apex:column>
+                                <apex:column headerValue="Number of individual programmes provided with signing" >                                  
+                                     <apex:inputField styleClass="numeric" style="width:110px!important;text-align:right!important" value="{!vodReturn.Individual_Programs_Provided_With_Sign__c}"></apex:inputField>
+                                </apex:column>
+                                <apex:column headerValue="Number of programme hours provided with audio description" >                                  
+                                     <apex:inputField styleClass="numeric" style="width:110px!important;text-align:right!important" value="{!vodReturn.Program_Hours_Provided_With_Audio_Desc__c}"></apex:inputField>
+                                </apex:column>
+                                <apex:column headerValue="Number of individual programmes provided with audio description" >                                  
+                                     <apex:inputField styleClass="numeric" style="width:110px!important;text-align:right!important" value="{!vodReturn.Individual_Programs_Provided_With_Audio__c}"></apex:inputField>
+                                </apex:column>
+                          </apex:pageBlockTable>  
+                          </apex:outputPanel>
+                          <br/>             
+                          </apex:pageblockSection>  
+                                
+                    </apex:pageBlock>
+                    <br/>
+                    <br/>
+                   </apex:outputPanel>
+                      
+                    <!-- Buttons -->
+                           
+                    <div class="col-sm-4 form-group">
+                           <apex:commandButton id="cancel" styleClass="btn btn-danger" 
+                                rendered="{!!readOnlyMode}"
+                                action="{!cancel}" immediate="true" value="Cancel" />
+                    </div>
+                    <div class="col-sm-4 form-group text-center">
+                        <apex:commandButton id="previous" styleClass="btn btn-default {!IF(previousEnabled,'','disabled')}" 
+                                disabled="{!!previousEnabled}" action="{!previous}" value="Previous page" />
+                        <apex:commandButton id="next" styleClass="btn btn-default {!IF(nextEnabled,'','disabled')}" 
+                                disabled="{!!nextEnabled}" action="{!next}" value="Next page" />
+                    </div>
+                    <div class="col-sm-4 form-group">
+                        <apex:commandButton id="save" rendered="{!!readOnlyMode}" styleClass="btn btn-success pull-right" 
+                                action="{!finish}" value="Save & exit" />
+                        <apex:commandButton id="back" rendered="{!readOnlyMode}" styleClass="btn btn-primary pull-right" 
+                                action="{!finish}" value="Back" />
+                    </div>
+                     
+                </apex:outputPanel>
+            </div>
+        </apex:define>
+    </apex:composition>
+</apex:page>

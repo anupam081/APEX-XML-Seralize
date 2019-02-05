@@ -1,0 +1,477 @@
+<!--
+/**
+* @description          MID Community Schedule List Page
+* @author               Patrick Dixon
+* @date                 05 Aug 2016
+* @Last Modified Date   31 Jan 2019 
+*/
+-->
+<apex:page doctype="html-5.0" showheader="false" sidebar="false" showchat="false" standardStylesheets="false" 
+        title="Ofcom Licensing services"
+        id="MIDScheduleList" controller="MIDComScheduleListController" action="{!onPageLoad}">
+        
+    <apex:composition template="LicensingComTemplate">
+
+        <!-- Tags -->
+        <apex:define name="MetaTags">
+            <apex:variable var="metaTitle" value="page title" />
+            <apex:variable var="metaDescription" value="description" />
+        </apex:define>
+
+        <!-- PageVariables - SSL/non-SSL, Licensing/MID, etc -->
+        <apex:define name="PageVariables">
+            <apex:variable var="pageType" value="internal" />
+            <apex:variable var="siteType" value="mid" />
+        </apex:define>
+
+        <!-- BreadCrumb -->
+        <apex:define name="BreadCrumb">
+            <ol class="breadcrumb">
+                <li><a href="{!URLFOR($Page.MIDComDashboard)}">Home</a></li>
+                <li class="active">Returns</li>
+            </ol>
+        </apex:define>
+
+        <!-- Heading -->
+        <apex:define name="Heading">
+            Scheduled returns
+        </apex:define>
+
+        <!-- Content -->
+        <apex:define name="Content">
+            <apex:pageBlock id="activeSchedules">
+                <br/>
+        
+                <!-- No schedules -->
+                <apex:outputPanel id="sharingError" layout="block" styleClass="alert alert-danger" rendered="{! !$ObjectType.Return_Schedule__c.accessible}">
+                    <apex:outputText escape="false" value="Object Return_Schedule__c is not accessible by user."/>
+                </apex:outputPanel>
+                <apex:outputPanel id="noSchedules" layout="block" styleClass="alert alert-danger" rendered="{!wSchedules.size==0}">
+                    <apex:outputText escape="false" value="There are no scheduled returns for you."/>
+                </apex:outputPanel>
+                
+                <!-- Schedules list -->
+                <apex:outputPanel id="scheduleList" layout="block" styleClass="table-responsive" 
+                        rendered="{!$ObjectType.Return_Schedule__c.accessible && wSchedules.size>0}">
+        
+                    <!-- Filters -->
+                    <div class="shaded-bar">
+                        <div class="form-inline bar-height">
+                            <div class="form-group form-group-padding">
+                                <strong><apex:outputText value="Filter returns"/></strong>
+                            </div>
+                            <div class="form-group form-group-padding">
+                                <apex:selectList id="returnTypeFilter" styleClass="form-control" value="{!returnTypeFilter}" multiselect="false" size="1" >
+                                    <apex:selectOptions id="returnType" value="{!returnTypeFilters}" />
+                                    <apex:actionSupport event="onchange" action="{!applyFilters}" rerender="activeSchedules" oncomplete="schedules.initialise()"/>
+                                </apex:selectList>
+                            </div>
+                            <div class="form-group form-group-padding">
+                                <apex:selectList id="returnNameFilter" styleClass="form-control" value="{!returnNameFilter}" multiselect="false" size="1" >
+                                    <apex:selectOptions id="returnName" value="{!returnNameFilters}" />
+                                    <apex:actionSupport event="onchange" action="{!applyFilters}" rerender="activeSchedules" oncomplete="schedules.initialise()"/>
+                                </apex:selectList>
+                            </div>
+                            <div class="form-group form-group-padding">
+                                <apex:selectList id="returnStatusFilter" styleClass="form-control" value="{!returnStatusFilter}" multiselect="false" size="1" >
+                                    <apex:selectOptions id="returnStatus" value="{!returnStatusFilters}" />
+                                    <apex:actionSupport event="onchange" action="{!applyFilters}" rerender="activeSchedules" oncomplete="schedules.initialise()"/>
+                                </apex:selectList>
+                            </div>
+                        </div>               
+                    </div>
+        
+                    <!-- Schedule Table -->
+                    <apex:outputPanel id="scheduleTable">
+                        <apex:variable var="row" value="{!0}"/>     <!-- row counter for javascript-->
+                        <!--  table-striped table-hover" --> 
+                        <apex:pageBlockTable styleClass="table" value="{!schedules.PaginatedSchedules}" var="wSchedule">
+                            <apex:column id="categoryType" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputField id="categoryTypeLink" value="{!wSchedule.schedule.Return_Category_Type__c}"/>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByCategoryType" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()" >
+                                        <apex:param name="sortField" value="Category Type" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Type" aria-hidden="true">Type</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Category Type' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Category Type' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>
+                             <apex:column id="returnAccount" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputField id="returnAccountLink" value="{!wSchedule.schedule.Account__r.Name}"/>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByReturnAccount" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()">
+                                        <apex:param name="sortField" value="Account" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Account" aria-hidden="true">Account</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Account' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Account' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>
+                            
+                            <apex:column id="LicenceType" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputField id="licenceTypeLink" value="{!wSchedule.schedule.Subscription__r.Licence_Number__c}"/>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByLicenceType" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()">
+                                        <apex:param name="sortField" value="Licence Number" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Licence" aria-hidden="true">Licence</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Licence Number' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Licence Number' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>
+                            <apex:column id="nameOfService" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputField id="nameOfServiceLink" value="{!wSchedule.schedule.Subscription__r.Service_Name__c}"/>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByNameOfService" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()">
+                                        <apex:param name="sortField" value="Name of Service" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Name of service" aria-hidden="true">Name of service</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Name of Service' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Name of Service' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>
+                           <!-- <apex:column id="returnFrequency" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputField id="returnFrequencyLink" value="{!wSchedule.schedule.Return_Frequency__c}"/>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByReturnFrequency" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()">
+                                        <apex:param name="sortField" value="Return Frequency" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Frequency" aria-hidden="true">Frequency</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Return Frequency' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Return Frequency' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>-->
+                            <apex:column id="categoryName" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputField id="categoryNameLink" value="{!wSchedule.schedule.Return_Category_Name__c}"/>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByCategoryName" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()">
+                                        <apex:param name="sortField" value="Category Name" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Name" aria-hidden="true">Name</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Category Name' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Category Name' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>
+                            <apex:column id="returnPeriod" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputField id="returnPeriodLink" value="{!wSchedule.schedule.Return_Period_Type__c}"/>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByReturnPeriod" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()">
+                                        <apex:param name="sortField" value="Return Period" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Period" aria-hidden="true">Period</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Return Period' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Return Period' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>
+                            <apex:column id="returnYear" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputField id="returnYearLink" value="{!wSchedule.schedule.Return_Period_Year__c}"/>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByReturnYear" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()">
+                                        <apex:param name="sortField" value="Return Year" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Year" aria-hidden="true">Year</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Return Year' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Return Year' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>
+                            <apex:column id="status" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputText id="statusLink" value="{!wSchedule.status}"/>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByStatus" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()">
+                                        <apex:param name="sortField" value="Status" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Status" aria-hidden="true">Status</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Status' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Status' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>
+                            <apex:column id="deadlineDate" onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})">
+                                <apex:outputText id="deadlineDateLink" value="{0,date,dd/MM/yyyy}">
+                                    <apex:param value="{!wSchedule.schedule.Return_Input_Deadline__c}"/>
+                                </apex:outputText>
+                                <apex:facet name="header">
+                                    <apex:commandLink id="sortByDeadlineDate" action="{!sortBy}" reRender="activeSchedules" oncomplete="schedules.initialise()">
+                                        <apex:param name="sortField" value="Due Date" assignTo="{!sortFieldName}"/> 
+                                        <span aria-label="Due Date" aria-hidden="true">Due Date</span>
+                                        <apex:outputPanel rendered="{!sortFieldName='Due Date' && wasSortedASC}">&nbsp;&#9660;</apex:outputPanel>
+                                        <apex:outputPanel rendered="{!sortFieldName='Due Date' && !wasSortedASC}">&nbsp;&#9650;</apex:outputPanel>
+                                    </apex:commandLink>
+                                </apex:facet>
+                            </apex:column>
+        
+                            <!-- Dummy row to maintain table striping -->
+                            <apex:column id="dummyRow" style="display: none; border: none;" breakBefore="true" colspan="9"/>
+                
+                            <apex:column id="scheduleActions" styleClass="form-inline text-center" style="display: none; border: none; height: 44px;" 
+                                    onmouseover="schedules.toggleButtons({!row})" onmouseout="schedules.toggleButtons({!row})" 
+                                    breakBefore="true" colspan="9">
+                                <apex:commandLink id="viewReturn" styleClass="btn btn-primary btn-row"
+                                        rendered="{!!wSchedule.isUploadable && wSchedule.hasViewPermission}" value="View" action="{!viewReturn}" >
+                                    <apex:param name="scheduleId" value="{!wSchedule.schedule.Id}" assignTo="{!scheduleId}"/> 
+                                    <apex:param name="returnType" value="{!wSchedule.schedule.Return_Category_Name__c}" assignTo="{!returnType}"/> 
+                                </apex:commandLink>
+                                <apex:commandLink id="completeReturn" styleClass="btn btn-primary btn-row"
+                                        rendered="{!!wSchedule.isUploadable 
+                                                    && wSchedule.hasModifyPermission && wSchedule.status <> 'Submitted'
+                                                    && !(wSchedule.hasSubmitPermission && wSchedule.status = 'Ready to submit')}" 
+                                        value="Complete" action="{!amendReturn}" >
+                                    <apex:param name="scheduleId" value="{!wSchedule.schedule.Id}" assignTo="{!scheduleId}"/> 
+                                    <apex:param name="returnType" value="{!wSchedule.schedule.Return_Category_Name__c}" assignTo="{!returnType}"/> 
+                                </apex:commandLink>
+                                <apex:commandLink id="submitReturn" styleClass="btn btn-primary btn-row"
+                                        rendered="{!!wSchedule.isUploadable 
+                                                    && wSchedule.status = 'Ready to submit'}" 
+                                        value="Review & Submit" action="{!amendReturn}">
+                                    <apex:param name="scheduleId" value="{!wSchedule.schedule.Id}" assignTo="{!scheduleId}"/>
+                                    <apex:param name="returnType" value="{!wSchedule.schedule.Return_Category_Name__c}" assignTo="{!returnType}"/>  
+                                </apex:commandLink>
+                                <apex:commandLink id="uploadXMLFile" styleClass="btn btn-primary btn-row"
+                                        rendered="{!wSchedule.isUploadable && wSchedule.status <> 'Submitted'}" 
+                                        value="Upload File" action="{!uploadParseXML}" >
+                                    <apex:param name="scheduleId" value="{!wSchedule.schedule.Id}" assignTo="{!scheduleId}"/> 
+                                </apex:commandLink>
+                                <apex:variable var="row" value="{!row+1}"/>     <!-- increment row counter -->  
+                            </apex:column>
+                        </apex:pageBlockTable>
+                        <div id="fillerRow" class="dataRow sm-col-12 dataRow-filler"><br/></div>
+                        
+                        <!-- No selected Schedules -->
+                        <apex:outputPanel id="noSelectedSchedules" layout="block" styleClass="alert alert-danger" rendered="{!schedules.PaginatedSchedules.size=0}">
+                            <apex:outputText escape="false" value="No return schedules match these critera"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    
+                    <!-- Bulk Actions --
+                    <apex:outputPanel rendered="{!bulkFilter<>$Label.LicensingComBulkActionsNone}">
+        
+                        <div class="shaded-bar">
+                            <div class="form-inline text-center bar-height">
+                                <div class="form-group">
+                                    <apex:commandButton id="surrenderAll" styleClass="btn btn-primary btn-row" 
+                                            disabled="{!schedules.selectedCount<=1}" rendered="{!bulkFilter=$Label.LicensingComBulkActionsSurrender}"
+                                            value="Surrender selected licences" action="{!surrenderSelectedLicences}"/>
+                                </div>
+                                <div class="form-group">
+                                    <apex:commandButton id="manageAllContacts" styleClass="btn btn-primary btn-row" 
+                                            disabled="{!schedules.selectedCount<=1}" rendered="{!bulkFilter=$Label.LicensingComBulkActionsManageContacts}"
+                                            value="Manage contacts for selected licences" action="{!manageSelectedContacts}"/>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+ -->
+                </apex:outputPanel>
+                
+                <nav>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="col-sm-12">
+        
+                                <!-- Pagination controls -->
+                                <div class="form-inline pull-right">
+                                    <ul class="pagination">
+                                        <li class="{!IF(schedules.hasPrevious,'','disabled')}">
+                                            <apex:outputPanel rendered="{!schedules.paginationEnabled}">
+                                                <apex:commandLink id="previous" rendered="{!schedules.hasPrevious}" action="{!schedules.previous}" 
+                                                        rerender="activeSchedules" oncomplete="schedules.initialise()">
+                                                    <span aria-label="{!$Label.LicensingComButtonPrevious}" aria-hidden="true">&laquo;</span>
+                                                </apex:commandLink>
+                                                <apex:outputPanel id="previousInactive" rendered="{!!schedules.hasPrevious}">
+                                                    <span aria-label="{!$Label.LicensingComButtonPrevious}" aria-hidden="true">&laquo;</span>
+                                                </apex:outputPanel>
+                                            </apex:outputPanel>
+                                        </li>
+                                        <apex:repeat var="pageNo" value="{!schedules.pageNumbers}" rendered="{!schedules.paginationEnabled}">
+                                            <li class="{!IF(schedules.pageNumber=pageNo,'active','')}">
+                                                <apex:commandLink id="pageNumber" rendered="true" action="{!schedules.selectPage}" 
+                                                        rerender="activeSchedules" oncomplete="schedules.initialise()">
+                                                    <apex:param name="pageNumber" value="{!pageNo}" assignTo="{!schedules.pageNumber}"/> 
+                                                    <span aria-label="{!pageNo}" aria-hidden="true">{!pageNo}</span>
+                                                </apex:commandLink>
+                                            </li>
+                                        </apex:repeat>
+                                        <li class="{!IF(schedules.hasNext,'','disabled')}">
+                                            <apex:outputPanel rendered="{!schedules.paginationEnabled}">
+                                                <apex:commandLink id="next" rendered="{!schedules.hasNext}" action="{!schedules.next}" 
+                                                        rerender="activeSchedules" oncomplete="schedules.initialise()">
+                                                    <span aria-label="{!$Label.LicensingComButtonNext}" aria-hidden="true">&raquo;</span>
+                                                </apex:commandLink>
+                                                <apex:outputPanel id="nextInactive" rendered="{!!schedules.hasNext}" >
+                                                    <span aria-label="{!$Label.LicensingComButtonNext}" aria-hidden="true">&raquo;</span>
+                                                </apex:outputPanel>
+                                            </apex:outputPanel>
+                                        </li>
+                
+                                        <!-- Page size -->
+                                        <li>
+                                        <div class="form-group">
+                                            <apex:outputLabel for="pageSizeSettings" style="padding:0 10px;"><strong>returns per page</strong></apex:outputLabel>      <!-- TO-DO styles-->
+                                            <apex:selectList id="pageSizeSettings" styleClass="form-control" style="margin-top: -1px;" 
+                                                    value="{!pageSize}" multiselect="false" size="1" >
+                                                <apex:selectOptions id="pageSize" value="{!pageSizeSettings}" />
+                                                <apex:actionSupport event="onchange" action="{!applyPageSize}" rerender="activeSchedules" oncomplete="schedules.initialise()"/>
+                                            </apex:selectList>
+                                        </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+                
+                <!-- in-page script to keep track of the number of off-page selected licences when the page block is AJAX refreshed -->
+                <script language="javascript" type="text/javascript">
+                    var offPageCheckedCount;        // the number of licences selected that are not visible on this page
+                    var checkedCount = 0;       // the checkboxes that are checked on this page
+                    
+                    // count the checkboxes checked on this page
+                    $j("[id$=':schedulesCheckbox']").each(function() {
+                        if (this.checked && !$j(this).is(':disabled')) {
+                            checkedCount++;
+                        }
+                    });
+                    offPageCheckedCount = 0;        <!-- TO-DO {!licences.selectedCount} - checkedCount; -->
+                    console.log('off-page selected count: ' + offPageCheckedCount);
+                </script>
+            </apex:pageBlock>
+        
+            <!-- licence table script -->
+            <script language="javascript" type="text/javascript">
+                var schedules = (function() {
+                    "use strict";
+        
+                    // listener to apply Select All checkbox state to all Licence checkboxes on the page
+                    function selectAllListener() {
+                        console.log('schedules.selectAllListener');
+            
+                        // Select All clicked
+                        $j("[id$='selectAll']").on('click', function(e) {
+                            e.stopPropagation();
+                            console.log('select all clicked');
+                        
+                            var checked = this.checked;
+                        
+                            // check/uncheck all the checkboxes
+                            $j("[id$=':licenceCheckbox']").each(function() { 
+                                $j(this).prop('checked', checked);
+                                console.log('check box: ' + checked);
+                            }); 
+                        
+                            // check visibility of the bulk actions
+                            showHideBulkButtons();                  
+                        });       
+                        
+                        // Checkbox clicked
+                        $j("[id$=':licenceCheckbox']").on('click', function(e) {
+                            e.stopPropagation();
+                            console.log('a checkbox clicked');
+                        
+                            // don't allow the click on disabled checkboxes
+                            console.log('disabled [' + $j(this).is(':disabled') + '], hidden [' + $j(this).is(':hidden') + ']');
+                            if ($j(this).is(':disabled') || $j(this).is(':hidden')) return false;
+                        
+                            // check visibility of the bulk actions
+                            showHideBulkButtons();
+                        });
+                    }
+                        
+                    // shows or hides the bulk action buttons depending on how many schedules are selected
+                    function showHideBulkButtons() {
+            
+                        var checkedCount = offPageCheckedCount;     // initialise the count with the number of off-page checked schedules
+                        console.log('off-page selected count: ' + checkedCount);
+            
+                        // add the checked checkboxes to the count
+                        $j("[id$=':schedulesCheckbox']").each(function() {
+                            if (this.checked && !$j(this).is(':disabled')) {
+                                checkedCount++;
+                            } else {
+                                // something is unchecked so uncheck the select all checkbox
+                                $j("[id$='selectAll']").prop('checked', false);
+                            }
+                            return;
+                        });
+            
+                        console.log('overall selected count: ' + checkedCount);
+                        if (checkedCount < 2) {
+                            // fewer than 2 are checked so disable the bulk buttons
+                            console.log('Bulk Buttons: hide');
+                            $j("[id$='surrenderAll']").attr("disabled","disabled");
+                            $j("[id$='manageAllContacts']").attr("disabled","disabled");
+                                    
+                        } else {
+                            // 2 or more checked so enable the bulk buttons
+                            console.log('Bulk Buttons: show');
+                            $j("[id$='surrenderAll']").removeAttr("disabled");
+                            $j("[id$='manageAllContacts']").removeAttr("disabled");
+                        };
+                    }
+        
+                    return {
+            
+                        initialise: function() {
+                            console.log('schedules.initialise');
+        
+                            // unselect the Select All checkbox and make sure it shows as unchecked
+                            $j("[id$='selectAll']").off('click');
+                            $j("[id$='selectAll']").prop('checked', false);
+                            selectAllListener();
+                            console.log('initialise complete'); 
+                        },
+        
+                        // toggles visibility of the button row in the licence table
+                        toggleButtons: function(row) {
+                            var rowId = ':' + row + ':scheduleSelected';
+                            var buttonRowId = ':' + row + ':scheduleActions';
+                            
+                            console.log('rowId: ' + rowId)
+                            console.log('buttonRowId: ' + buttonRowId)
+                
+                            // check if clicked on a hidden or visible row
+                            if ($j("[id$='" + buttonRowId + "']").css("display") == "none") {
+                            
+                                // hidden, so first hide all the button rows and un-highlight everything
+                                $j("[id$=':scheduleActions']").css("display","none");
+                                $j("[id$='" + buttonRowId + "']").closest('tr').siblings().removeClass("active");
+                
+                                // then display the buttons on the selected row
+                                $j("[id$='" + buttonRowId + "']").css("display","table-cell");
+                
+                                // and highlight the row and the button row
+                                $j("[id$='" + buttonRowId + "']").closest('tr').addClass("active");
+                                $j("[id$='" + rowId + "']").closest('tr').addClass("active");
+                            
+                                // and hide the filler row
+                                $j("[id$='fillerRow']").css("display","none");
+                                
+                            } else {
+                            
+                                // visible, so hide the button row
+                                $j("[id$=':scheduleActions']").css("display","none");
+                
+                                // and un-highlight everything
+                                $j("[id$='" + buttonRowId + "']").closest('tr').siblings().removeClass("active");
+                                
+                                // and show the filler row instead
+                                $j("[id$='fillerRow']").css("display","block");
+                            
+                            }
+                        }
+                    }
+                    
+                }());   
+            </script>
+                
+            <script language="javascript" type="text/javascript">
+                $j(document).ready(function() {
+                    schedules.initialise();
+                });
+                
+            </script>
+
+        </apex:define>
+    </apex:composition>
+</apex:page>

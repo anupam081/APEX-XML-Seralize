@@ -1,0 +1,150 @@
+<!--
+/**
+* @description          MID Submit Return Page 
+* @author               NIIT Technologies
+* @Created date         18 Jan 2019
+* @Last Modified Date   31 Jan 2019
+*/
+-->
+<apex:page doctype="html-5.0" showheader="false" sidebar="false" showchat="false" standardStylesheets="false" 
+        title="Ofcom Licensing services"
+        id="MIDSubmitReturn" controller="MIDReturnController" action="{!onPageLoad}">
+
+    <apex:composition template="LicensingComTemplate">
+
+        <!-- Tags -->
+        <apex:define name="MetaTags">
+            <apex:variable var="metaTitle" value="page title" />
+            <apex:variable var="metaDescription" value="description" />
+        </apex:define>
+
+        <!-- PageVariables - SSL/non-SSL, Licensing/MID, etc -->
+        <apex:define name="PageVariables">
+            <apex:variable var="pageType" value="internal" />
+            <apex:variable var="siteType" value="mid" />
+        </apex:define>
+
+        <!-- BreadCrumb -->
+        <apex:define name="BreadCrumb">
+        </apex:define>
+
+        <!-- Errors -->
+        <apex:define name="Error">
+            <!-- Page Messages -->
+            <apex:outputPanel id="error">
+                <apex:messages styleClass="error alert alert-danger list-unstyled" globalOnly="true"/>
+            </apex:outputPanel>
+        </apex:define>
+
+        <!-- Heading -->
+        <apex:define name="Heading">
+            {!returnType}
+            <h2>{!orgAccountName}{!returnLicence}{!returnChannel}{!returnPeriod}</h2>
+            <c:MIDComScheduleStatus id="scheduleStatus" rendered="{!wSchedule.withinValidSubmissionPeriod}" status="{!wSchedule.status}"/>
+        </apex:define>
+
+        <!-- Content -->
+        <apex:define name="Content">
+			<apex:outputPanel rendered="{!wSchedule.withinValidSubmissionPeriod}" layout="none">
+	            <ol class="breadcrumb">
+                    <apex:repeat value="{!list_Tabs}" var="tab">
+                        <li>
+                             <apex:commandLink id="selectPage" action="{!jumpToPage}">
+                                    <apex:param name="index" value="{!pageIndex}" assignTo="{!selectPageNumber}"/>
+                                    <apex:param name="tabName" value="{!tab}" assignTo="{!strTabVisible}"/> 
+                                    <span aria-label="{!tab}" aria-hidden="true">{!tab}</span>
+                            </apex:commandLink>
+                        </li>
+                    </apex:repeat>
+                </ol>
+			</apex:outputPanel>
+
+            <div class="row">
+				<apex:outputPanel id="expired" rendered="{!!wSchedule.withinValidSubmissionPeriod }" layout="block" styleClass="col-md-6 col-sm-7">
+
+					<div class="alert alert-info">
+						<div class="row">
+							<div class="col-sm-12">
+								<apex:outputText escape="false" value="{!$Label.MIDComExpiredReturnMsg}"/>
+							</div>
+						</div>
+					</div>
+	
+					<!-- Buttons -->
+					<div>
+						<div class="form-group">
+							<apex:commandButton id="ok" styleClass="btn btn-primary pull-right" action="{!cancel}" 
+									value="{!$Label.LicensingComButtonOK}" />
+						</div>
+					</div>
+				</apex:outputPanel>
+
+                <apex:outputPanel id="returnPages" rendered="{!wSchedule.withinValidSubmissionPeriod}" layout="block" styleClass="col-md-12">
+                
+                    <div class="row">
+                    
+                        <!-- Submission legal text -->
+                        <div class="col-md-6">
+                            <div class="col-md-12">
+								<apex:outputPanel id="declaration" styleClass="{!IF(CONTAINS(errorList, 'declarationAgreement'),'has-error','')}">
+	                                <apex:outputText escape="false" value="{!IF(isPostTelecom, $Label.MIDComPostTelecomSubmissionDeclarationMsg, $Label.MIDComTVRadioSubmissionDeclarationMsg)}"/>
+									<br/>
+	                                <label class="checkbox-inline">
+	                                	<apex:inputCheckbox value="{!declarationAgreement}"/>I agree
+	                                </label>
+								</apex:outputPanel>
+                            </div>
+                        </div>
+
+                        <!-- Submitter details panel -->
+                        <div class="col-md-offset-1 col-md-5">
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+                                    <h4>Submitter details</h4>
+
+                                    <div class="form-group">
+                                        <apex:outputLabel styleClass="control-label close-layout" value="{!$Label.LicensingComFieldLabelName}" for="personAccountName" />
+                                        <apex:outputText id="personAccountName">{!personAccount.Salutation} {!personAccount.FirstName} {!personAccount.MiddleName} {!personAccount.LastName}</apex:outputText>
+                                    </div>
+                                    <div class="form-group">
+                                        <apex:outputLabel styleClass="control-label close-layout" value="{!$Label.LicensingComFieldLabelEmail}" for="email" />
+                                        <div><apex:outputField id="email" value="{!orgRole.Email__c}" /></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <apex:outputLabel styleClass="control-label close-layout" value="{!$Label.LicensingComFieldLabelPhone}" for="phone" />
+                                        <div><apex:outputField id="phone" value="{!orgRole.Phone__c}" /></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <apex:outputLabel styleClass="control-label close-layout" value="{!$Label.LicensingComFieldLabelAddress}" for="address" />
+                                        <div id="address">
+                                            <apex:outputText rendered="{!!isBlank(orgRole.Street__c)}"><div>{!orgRole.Street__c}</div></apex:outputText>
+                                            <apex:outputText rendered="{!!isBlank(orgRole.City__c)}"><div>{!orgRole.City__c}</div></apex:outputText>
+                                            <apex:outputText rendered="{!!isBlank(orgRole.State__c)}"><div>{!orgRole.State__c}</div></apex:outputText>
+                                            <apex:outputText rendered="{!!isBlank(orgRole.PostalCode__c)}"><div>{!orgRole.PostalCode__c}</div></apex:outputText>
+                                            <apex:outputText rendered="{!!isBlank(orgRole.Country_Picklist__c)}"><div>{!orgRole.Country_Picklist__c}</div></apex:outputText>
+                                        </div>
+                                    </div>
+                                    <apex:commandButton id="manageRole" styleClass="btn btn-primary panel-bottom-right"
+                                            action="{!manageRole}" value="Update details" />
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="row">
+                        <div class="col-md-7">
+                            <div class="col-md-12">
+                                <apex:commandButton id="cancel" styleClass="btn btn-danger" 
+                                        action="{!cancel}" value="Cancel" />
+                                <apex:commandButton id="save" styleClass="btn btn-success pull-right" 
+                                        action="{!confirm}" value="Confirm" rerender="error, returnPages"/>
+                            </div>
+                        </div>
+                    </div>
+                </apex:outputPanel>
+            </div>
+        </apex:define>
+    </apex:composition>
+</apex:page>
