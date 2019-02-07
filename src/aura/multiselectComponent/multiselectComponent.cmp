@@ -1,0 +1,11 @@
+<aura:component controller="MultiselectController">
+<aura:attribute name="lstContactData" type="List" />
+<aura:handler name="init" action="{!c.doInit}" value="{!this}"></aura:handler>
+<lightning:dualListbox name="languages"  
+                           label= "Select Languages" 
+                           sourceLabel="Available" 
+                           selectedLabel="Selected" 
+                           fieldLevelHelp="This is a dual listbox" 
+                           options="{!v.lstContactData}" 
+                           onchange="{! c.handleChange }"/> 
+</aura:component>
